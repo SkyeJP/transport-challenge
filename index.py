@@ -118,6 +118,18 @@ class TransportBot(discord.Client):
             not message.attachments or 
             self.user not in message.mentions):
             return
+                
+        if message.content == "!sync" and message.author.id == ADMIN_ID:
+            print("Force-syncing command tree...")
+            try:
+                # This copies your global commands specifically to the current server
+                self.tree.copy_global_to(guild=message.guild)
+                synced = await self.tree.sync(guild=message.guild)
+                await message.channel.send(f"✅ Synced {len(synced)} commands to this server! Restart your Discord app if they don't appear.")
+                return 
+            except Exception as e:
+                await message.channel.send(f"❌ Sync failed: {e}")
+                return
         
         pid = message.author.id
         if pid in PLAYER_IDS and self.player_data[pid]['active_challenge'] and not self.player_data[pid]['paused']:
