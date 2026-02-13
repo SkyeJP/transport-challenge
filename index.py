@@ -11,9 +11,9 @@ ADMIN_ID = 694986869204713482  # Your Discord ID
 PLAYER_IDS = [694986869204713482, 1445073473243447417] # The IDs of you and your friend
 
 # Channel where the bot posts challenges (make this read-only for players)
-CHALLENGE_CHANNEL_ID = 123456789012345678 
+CHALLENGE_CHANNEL_ID = 1471981226578415822 
 # Channel where players talk and send proof
-CHAT_CHANNEL_ID = 987654321098765432
+CHAT_CHANNEL_ID = 1471981485895450777
 
 # Challenges from image_0.png, updated to ensure they all ask for a photo/video.
 CHALLENGES = [
