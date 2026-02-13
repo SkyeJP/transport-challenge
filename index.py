@@ -6,9 +6,9 @@ import asyncio
 import time
 
 # --- CONFIGURATION ---
-TOKEN = 'YOUR_BOT_TOKEN_HERE'
-ADMIN_ID = 123456789012345678  # Your Discord ID
-PLAYER_IDS = [111222333, 444555666] # The IDs of you and your friend
+TOKEN = 'MTQ3MTk4MjU2MTE0MzAzMzkwNg.GnCt1l.BBrAyamkwAib6xNdRYffItPUXd9lPtW3ubqrSQ'
+ADMIN_ID = 694986869204713482  # Your Discord ID
+PLAYER_IDS = [694986869204713482, 1445073473243447417] # The IDs of you and your friend
 
 # Channel where the bot posts challenges (make this read-only for players)
 CHALLENGE_CHANNEL_ID = 123456789012345678 
