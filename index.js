@@ -1,7 +1,8 @@
+require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, REST, Routes } = require('discord.js');
 
 // --- CONFIGURATION ---
-const TOKEN = 'MTQ3MTk4MjU2MTE0MzAzMzkwNg.GnCt1l.BBrAyamkwAib6xNdRYffItPUXd9lPtW3ubqrSQ';
+const TOKEN = process.env.TOKEN;
 const CLIENT_ID = '1471982561143033906';
 const GUILD_ID = '1278094002817597472';
 const ADMIN_ID = '694986869204713482';
