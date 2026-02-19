@@ -6,16 +6,25 @@ const TOKEN = process.env.TOKEN;
 const CLIENT_ID = '1471982561143033906';
 const GUILD_ID = '1278094002817597472';
 const ADMIN_ID = '694986869204713482';
-const PLAYER_IDS = ['694986869204713482', '1445073473243447417'];
+
+// Updated to include all three players
+const PLAYER_IDS = [
+    '694986869204713482', 
+    '1445073473243447417', 
+    '762332852565704723'
+];
+
 const CHALLENGE_CH_ID = '1471981226578415822';
 const CHAT_CH_ID = '1471981485895450777';
-const STATUS_CH_ID = '1471997005596332135'; // The Progress Channel
+const STATUS_CH_ID = '1471997005596332135'; 
 
+// Updated to the full 19-operator list
 const OPERATORS = [
-    "National Express West Midlands", "National Express Coventry", "Diamond Bus", 
-    "Stagecoach", "Arriva", "West Midlands Metro", "West Midlands Railway", 
-    "London Northwestern", "Avanti West Coast", "CrossCountry", 
-    "Chiltern Railways", "Transport for Wales"
+    "Arriva", "Banga Buses", "D&G Bus", "Diamond Bus", "Kevs Cars and Coaches",
+    "LandFlight", "Let's Go", "National Express Coventry", "National Express West Midlands",
+    "Select Bus Services", "Stagecoach Midlands", "Walsall Community Transport",
+    "Avanti West Coast", "Transport for Wales", "CrossCountry", "West Midlands Railway",
+    "London Northwestern Railway", "Chiltern Railways", "West Midlands Metro"
 ];
 
 const client = new Client({
@@ -28,10 +37,10 @@ let playerData = {};
 
 PLAYER_IDS.forEach(id => {
     playerData[id] = { 
-        penaltyMinutes: 0, // Time added/removed via challenges
+        penaltyMinutes: 0,
         activeChallenge: false,
         challengePaused: false,
-        challengeTimeLeft: 300,
+        challengeTimeLeft: 120, // Hard Mode: 2 Minutes
         challengeTimer: null,
         completedOps: [],
         finished: false,
@@ -39,7 +48,7 @@ PLAYER_IDS.forEach(id => {
     };
 });
 
-// Helper to format time strings
+// Helper: Format time
 function formatDuration(ms) {
     let totalSeconds = Math.floor(ms / 1000);
     let hours = Math.floor(totalSeconds / 3600);
@@ -48,40 +57,51 @@ function formatDuration(ms) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
+// Helper: Visual Progress Bar
+function createProgressBar(current, total) {
+    const size = 10; 
+    const progress = Math.round((size * current) / total);
+    const emptyProgress = size - progress;
+    const progressText = "🟩".repeat(progress);
+    const emptyProgressText = "⬜".repeat(emptyProgress);
+    const percentage = Math.round((current / total) * 100);
+    return `${progressText}${emptyProgressText} **${percentage}%** (${current}/${total})`;
+}
+
 // --- UPDATE STATUS CHANNEL EVERY MINUTE ---
 async function updateStatusEmbed() {
     if (!startTime || !statusMessage) return;
 
     const embed = new EmbedBuilder()
-        .setTitle("🕒 LIVE: West Midlands Transport Challenge")
-        .setColor(0x2B2D31)
+        .setTitle("🏁 TFWM Operator Challenge: LIVE")
+        .setDescription("Challenge progress and adjusted travel times.")
+        .setColor(0x00FF00)
         .setTimestamp();
 
-    PLAYER_IDS.forEach(id => {
+    for (const id of PLAYER_IDS) {
         const data = playerData[id];
         const elapsedMs = (data.finishTime || Date.now()) - startTime;
         const adjustedMs = elapsedMs + (data.penaltyMinutes * 60000);
         
-        let opList = OPERATORS.map(op => data.completedOps.includes(op) ? `✅ ${op}` : `⬜ ${op}`).join('\n');
-        
+        // Fetch username for display
+        const user = await client.users.fetch(id).catch(() => null);
+        const displayName = user ? user.username : id;
+
         embed.addFields({
-            name: `Player: ${client.users.cache.get(id)?.username || id}`,
-            value: `**Current Adjusted Time:** \`${formatDuration(adjustedMs)}\`\n*(Raw: ${formatDuration(elapsedMs)} | Mod: ${data.penaltyMinutes}m)*\n\n**Operators:**\n${opList}`,
-            inline: true
+            name: `👤 ${displayName}`,
+            value: `**Adjusted Time:** \`${formatDuration(adjustedMs)}\`\n${createProgressBar(data.completedOps.length, OPERATORS.length)}\n${data.finished ? "✅ **COMPLETE**" : "🚍 *In Progress*"}\n\u200B`,
+            inline: false
         });
-    });
+    }
 
     try {
         await statusMessage.edit({ embeds: [embed] });
     } catch (e) { console.error("Failed to edit status message"); }
 }
 
-// --- LOGIC ---
-
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // EMERGENCY SYNC
     if (message.content === '!sync' && message.author.id === ADMIN_ID) {
         const rest = new REST({ version: '10' }).setToken(TOKEN);
         const commands = [{ name: 'start', description: 'Begin the challenge' }];
@@ -89,7 +109,6 @@ client.on('messageCreate', async (message) => {
         message.reply("✅ Status Sync Complete.");
     }
 
-    // CHECK-IN / CHALLENGE HANDLING
     if (message.channelId === CHAT_CH_ID && message.attachments.size > 0 && message.mentions.has(client.user)) {
         const pId = message.author.id;
         const data = playerData[pId];
@@ -118,11 +137,11 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.isChatInputCommand() && interaction.commandName === 'start') {
         startTime = Date.now();
         const statusChan = client.channels.cache.get(STATUS_CH_ID);
-        statusMessage = await statusChan.send("🚀 Initializing Challenge Board...");
+        statusMessage = await statusChan.send("🚀 Initializing Leaderboard...");
         
         PLAYER_IDS.forEach(id => queueNextChallenge(id));
-        setInterval(updateStatusEmbed, 60000); // Update every 1 minute
-        await interaction.reply("Challenge Started! Progress is being tracked in <#" + STATUS_CH_ID + ">.");
+        setInterval(updateStatusEmbed, 60000); 
+        await interaction.reply("Challenge Started! Tracking progress in <#" + STATUS_CH_ID + ">.");
     }
 
     if (interaction.isButton()) {
@@ -140,7 +159,7 @@ client.on('interactionCreate', async (interaction) => {
                 data.finishTime = Date.now();
             }
         } else if (type === 'approve') {
-            data.penaltyMinutes -= 10; // REMOVE 10 MINUTES FOR WINNING
+            data.penaltyMinutes -= 10; 
             stopChallenge(pId, `🌟 Challenge Approved! **10 minutes deducted** from <@${pId}>'s total time.`);
             await interaction.update({ components: [] });
         } else if (type === 'reject') {
@@ -165,14 +184,14 @@ async function triggerChallenge(pId) {
     data.challengeTimeLeft = 120;
     data.challengePaused = false;
 
-    const challenge = "Take a photo of the vehicle fleet number!"; // (Shortened for brevity)
+    const challenge = "Take a photo of the vehicle fleet number!";
     client.channels.cache.get(CHALLENGE_CH_ID).send(`🚨 **CHALLENGE!** <@${pId}>\nTask: ${challenge}`);
 
     data.challengeTimer = setInterval(() => {
         if (!data.challengePaused) {
             data.challengeTimeLeft--;
             if (data.challengeTimeLeft <= 0) {
-                data.penaltyMinutes += 10; // ADD 10 MINUTES FOR FAILING
+                data.penaltyMinutes += 10; 
                 stopChallenge(pId, `⏰ **TIME'S UP!** <@${pId}> failed. **10 minutes added** to their total time.`);
             }
         }
